@@ -5,11 +5,14 @@
  */
 package org.logicalcobwebs.proxool;
 
+import java.lang.management.ManagementFactory;
 import java.sql.Connection;
 import java.sql.SQLException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
+import sun.tools.jstack.JStack;
 
 /**
  * Responsible for prototyping connections for all pools
@@ -20,6 +23,7 @@ import org.apache.commons.logging.LogFactory;
  */
 public class Prototyper {
 
+	private static boolean hasDump=false;
     private ConnectionPool connectionPool;
 
     private Log log = LogFactory.getLog(Prototyper.class);
@@ -306,8 +310,33 @@ public class Prototyper {
      */
     public void quickRefuse() throws SQLException {
         if (connectionCount >= getDefinition().getMaximumConnectionCount() && connectionPool.getAvailableConnectionCount() < 1) {
+        	if(!hasDump){
+        		try {
+    				String pname = ManagementFactory.getRuntimeMXBean().getName();
+    				String pid = pname.split("@")[0];
+    				String[] xx = new String[]{pid};
+    				JStack.main(xx);
+    				hasDump = true;
+    			} catch (Exception e) {
+    				e.printStackTrace();
+    			}
+        	}
             throw new ConnectionPoolExceedException("Couldn't get connection because we are at maximum connection count (" + connectionCount + "/" + getDefinition().getMaximumConnectionCount() + ") and there are none available");
+        }else{
+        	log.info("we have open "+connectionCount + " in pool and "+connectionPool.getAvailableConnectionCount() +" available");
+        	if(!hasDump && connectionCount>=getDefinition().getMinimumConnectionCount() && connectionPool.getAvailableConnectionCount()<1){
+        		try {
+    				String pname = ManagementFactory.getRuntimeMXBean().getName();
+    				String pid = pname.split("@")[0];
+    				String[] xx = new String[]{pid};
+    				JStack.main(xx);
+    				hasDump = true;
+    			} catch (Exception e) {
+    				e.printStackTrace();
+    			}
+        	}
         }
+        
     }
 }
 
